@@ -115,12 +115,19 @@ Deno.writeTextFileSync("./build/routes.json", strRep);
 import { serve } from "https://deno.land/std@0.126.0/http/server.ts";
 import { EndpointResponse } from "./impact.d.ts";
 
+import {
+  Document,
+  HTMLDocument,
+} from "https://deno.land/x/deno_dom@v0.1.21-alpha/deno-dom-wasm-noinit.ts";
+
 if (commands.indexOf("dev") != -1) {
   const port = 8080;
 
   let endpoint: Function = () => {};
-  if (routes.default?.default != null && routes.default.get != null)
-    endpoint = routes.default.get;
+  if (routes.default?.get != null) endpoint = routes.default.get;
+
+  let body: Function = () => {};
+  if (routes.default?.default != null) body = routes.default.default;
 
   const handler = (request: Request): Response => {
     let headers = Object.fromEntries(request.headers.entries());
@@ -128,10 +135,10 @@ if (commands.indexOf("dev") != -1) {
       headers,
     };
     const response: EndpointResponse = endpoint(params);
-    let body = "Your user-agent is:\n\n";
-    body += request.headers.get("user-agent") || "Unknown";
 
-    return new Response(response.body || "", {
+    const doc = new Document();
+
+    return new Response(body({ document: doc, ...response.body }) || "", {
       status: response.status || 200,
     });
   };

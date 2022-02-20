@@ -1,6 +1,6 @@
-type EndpointResponse = {
+type EndpointResponse<K = {}> = {
   status?: Number;
-  body?: Object | string;
+  body?: (Object | string) & K;
   headers?: Record<string, any>;
 };
 
