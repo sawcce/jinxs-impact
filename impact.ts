@@ -26,9 +26,10 @@ const output = inputArgs.output;
 
 interface Module {
   path: string;
-  default?: Function;
+  default?: (k: any) => Element;
   loader?: Function;
   get?: Function;
+  error?: (k: any) => Element;
   [k: string]: Function | string | undefined;
 }
 
@@ -119,6 +120,7 @@ import {
   Document,
   HTMLDocument,
 } from "https://deno.land/x/deno_dom@v0.1.21-alpha/deno-dom-wasm-noinit.ts";
+import { Element, Paragraph } from "./ui.ts";
 
 if (commands.indexOf("dev") != -1) {
   const port = 8080;
@@ -126,21 +128,41 @@ if (commands.indexOf("dev") != -1) {
   let endpoint: Function = () => {};
   if (routes.default?.get != null) endpoint = routes.default.get;
 
-  let body: Function = () => {};
+  let body: (k: any) => Element;
   if (routes.default?.default != null) body = routes.default.default;
 
-  const handler = (request: Request): Response => {
+  const handler = async (request: Request): Promise<Response> => {
     let headers = Object.fromEntries(request.headers.entries());
     let params = {
       headers,
     };
-    const response: EndpointResponse = endpoint(params);
 
-    const doc = new Document();
+    const res_headers = new Headers();
+    res_headers.set("Content-Type", "text/html");
 
-    return new Response(body({ document: doc, ...response.body }) || "", {
-      status: response.status || 200,
-    });
+    try {
+      const response: EndpointResponse = await endpoint(params);
+
+      const doc = new Document();
+
+      return new Response(
+        body({ document: doc, ...response.body }).emit() || "",
+        {
+          status: response.status || 200,
+          headers: res_headers,
+        }
+      );
+    } catch (e) {
+      return new Response(
+        (
+          routes.default?.error?.call(this, e) || new Paragraph("Server error!")
+        ).emit(),
+        {
+          status: 400,
+          headers: res_headers,
+        }
+      );
+    }
   };
 
   console.log(`Dev JINXS app running at: http://localhost:8080/`);

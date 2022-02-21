@@ -1,24 +1,42 @@
 import { RequestHandler } from "../impact.d.ts";
-import { Document } from "https://deno.land/x/deno_dom@v0.1.21-alpha/deno-dom-wasm-noinit.ts";
 
-const document = new Document();
+import { Container, Element, List, Paragraph } from "../ui.ts";
+
+type Fact = {
+  text: string;
+};
 
 type Body = {
   serverTime: Date;
+  facts: Fact[];
 };
 
-export const get: RequestHandler<Body> = () => {
+export const get: RequestHandler<Body> = async () => {
+  let facts = await (
+    await fetch("https://cat-fact.herokuapp.com/facts", {
+      method: "GET",
+    })
+  ).json();
+
   return {
     status: 200,
     body: {
       serverTime: Date.now(),
+      facts,
     },
   };
 };
 
-export default function index({ serverTime }: Body) {
-  let node = document.createElement("h1");
-  node.innerText = `Time on server is: ${serverTime}`;
+export default function index({ serverTime, facts }: Body): Element {
+  return new Container(
+    new Paragraph(`Server time: ${serverTime}`),
+    new List<Fact>(
+      ({ text }) => new Paragraph(`Did you know that ${text}`),
+      ...facts
+    )
+  );
+}
 
-  return node.innerHTML;
+export function error() {
+  return new Paragraph("Error!");
 }
