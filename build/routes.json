@@ -2,17 +2,15 @@
 	"name": "/",
 	"path": "./routes",
 	"subroutes": {
-		"docs": {
-			"name": "/docs",
-			"path": "/home/alexis/Development/Frameworks/jinxs-impact/routes/docs",
-			"subroutes": {},
-			"layout": {
-				"type": "nested",
-				"path": "/home/alexis/Development/Frameworks/jinxs-impact/routes/docs/__layout.ts"
+		"x": {
+			"name": "/x",
+			"path": "/home/alexis/Development/Frameworks/jinxs-impact/cli/routes/x",
+			"subroutes": {
+				"t": {
+					"name": "/x/t",
+					"path": "/home/alexis/Development/Frameworks/jinxs-impact/cli/routes/x/t.ts"
+				}
 			}
 		}
-	},
-	"default": {
-		"path": "/home/alexis/Development/Frameworks/jinxs-impact/routes/index.ts"
 	}
 }
