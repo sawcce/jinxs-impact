@@ -33,11 +33,14 @@ impact dev
 impact init creates a new project and impact dev starts the application.
 
 ## Contributing
+
 To contribute to the impact developement process clone locally the impact official repository:
 ```bash
 git clone https://github.com/sawcce/jinxs-impact
 ```
+
 and start contributing, before committing format your files with the prettier formatter.
+
 =======
 ## Install the cli
 
