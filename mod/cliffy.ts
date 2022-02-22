@@ -1,1 +1,6 @@
-import { prompt, Input } from "https://deno.land/x/cliffy/prompt/mod.ts";
+export {
+  prompt,
+  Input,
+  Checkbox,
+  Confirm,
+} from "https://deno.land/x/cliffy/prompt/mod.ts";

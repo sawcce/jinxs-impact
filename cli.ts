@@ -46,22 +46,24 @@ import {
 } from "$/routing.ts";
 import { Element, Paragraph } from "$/ui.ts";
 
-const routes = await navigateRoutes("./routes", "/");
-const strRep = JSON.stringify(routes, null, "\t");
-
-const endpoints = MakeEndpoints(routes);
-console.log(endpoints);
-
-Deno.writeTextFileSync(resolve(output, "./routes.json"), strRep);
-Deno.writeTextFileSync(
-  resolve(output, "./endpoints.ts"),
-  serializeEndpoints(endpoints)
-);
-
 import { serve } from "https://deno.land/std@0.126.0/http/server.ts";
 import { EndpointResponse } from "./impact.d.ts";
 
+import Build from "$/build.ts";
+import Init from "$/init.ts";
+
+switch (command) {
+  case "build":
+    await Build(input, output);
+    break;
+
+  case "init":
+    await Init();
+    break;
+}
+
 if (command == "dev") {
+  const [routes, endpoints] = await Build(input, output);
   const port = 8080;
 
   let endpoint: Function = () => {};

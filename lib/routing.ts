@@ -118,7 +118,7 @@ export async function navigateRoutes(
 /**
  * Represents an endpoint that can be matched by url
  */
-type Endpoint = {
+export type Endpoint = {
   regex: RegExp;
   layouts: Function[];
   error: Function;
