@@ -38,3 +38,8 @@ To contribute to the impact developement process clone locally the impact offici
 git clone https://github.com/sawcce/jinxs-impact
 ```
 and start contributing, before committing format your files with the prettier formatter.
+=======
+## Install the cli
+
+Run this command with the deno cli installed:
+`deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
