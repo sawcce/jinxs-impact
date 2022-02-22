@@ -33,26 +33,35 @@ export interface Route {
   /**The default page for that Route (index.*) */
   default?: Module;
   /**The subroutes to that Route (eg: / -> /info ; / contact) */
-  subroutes: Routes;
+  subroutes?: Route[];
   /**The layout file for that route's default and subroutes */
   layout?: {
     type: "nested" | "override";
   } & Module;
   /**The error file when the Route doesn't handle the error or is missing (404) */
   error?: Module;
+  isDir?: boolean;
 }
 
 /**Dictionnary of Routes */
 export type Routes = Record<string, Route>;
 
+/**
+ * Goes through all the files in a directory, recursively,
+ * making a route tree.
+ * @param basePath The path of the root folder
+ * @param pathName The textual representation of that folder
+ * @returns A route AST
+ */
 export async function navigateRoutes(
   basePath: string,
   pathName: string
 ): Promise<Route> {
-  let route: Route = {
+  const route: Route = {
     name: pathName,
     path: basePath,
-    subroutes: {},
+    subroutes: [],
+    isDir: pathName == "/",
   };
 
   for await (const { name, isFile, isSymlink } of Deno.readDir(basePath)) {
@@ -87,18 +96,93 @@ export async function navigateRoutes(
           continue;
       }
 
-      route.subroutes[base] = route.subroutes[base] || {
+      route?.subroutes?.push({
         name: resolve(pathName, base),
         path: resolve(basePath, name),
-      };
+      });
       continue;
     }
 
-    route.subroutes[name] = await navigateRoutes(
-      resolve(basePath, name),
-      resolve(pathName, name)
-    );
+    route?.subroutes?.push({
+      ...(await navigateRoutes(
+        resolve(basePath, name),
+        resolve(pathName, name)
+      )),
+      isDir: true,
+    });
   }
 
   return route;
+}
+
+/**
+ * Represents an endpoint that can be matched by url
+ */
+type Endpoint = {
+  regex: RegExp;
+  layouts: Function[];
+  error: Function;
+};
+
+const defaultError = (error: Error) => new Paragraph(`Error: ${error.message}`);
+
+export function MakeEndpoints(root: Route, layouts: Module[] = []): Endpoint[] {
+  let endpoints: Endpoint[] = [];
+
+  console.log(root.default);
+
+  if (!root.isDir && root.subroutes == null) {
+    return [
+      {
+        regex: new RegExp(root.name),
+        error: root.error?.default || defaultError,
+        layouts: [],
+      },
+    ];
+  }
+
+  if (root.default != null) {
+    const layout = root.layout?.default || ((slot: any) => slot);
+    endpoints.push({
+      regex: new RegExp(root.name),
+      error: root.error?.default || ((_: any) => ""),
+      layouts: [layout],
+    });
+  }
+
+  for (const subRoute of root.subroutes || []) {
+    endpoints = [...endpoints, ...MakeEndpoints(subRoute)];
+  }
+
+  /*
+  if (root.subroutes != null) {
+    console.log(Object.values(root.subroutes));
+    let x: Endpoint[] = [];
+
+      console.log("Make :", value);
+      x.push({
+        regex: new RegExp(value.name),
+        layouts: [],
+        error: (e: any) => e,
+      });
+
+    endpoints = [...endpoints, ...x];
+  }*/
+
+  return endpoints;
+}
+
+export function serializeEndpoints(endpoints: Endpoint[]): string {
+  return (
+    "[\n" +
+    endpoints
+      .map(
+        (endpoint) =>
+          ` { regex: ${endpoint.regex.toString()}, layouts: [ ${endpoint.layouts
+            .map((layout) => layout.toString())
+            .join(",")} ], error: ${endpoint.error} }`
+      )
+      .join(",\n") +
+    "\n]"
+  );
 }

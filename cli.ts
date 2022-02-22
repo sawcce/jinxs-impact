@@ -37,13 +37,26 @@ const input = resolve(Deno.cwd(), inputArgs.input);
 await ensureDir(output);
 await ensureDir(input);
 
-import { Routes, Route, navigateRoutes } from "$/routing.ts";
+import {
+  Routes,
+  Route,
+  navigateRoutes,
+  MakeEndpoints,
+  serializeEndpoints,
+} from "$/routing.ts";
 import { Element, Paragraph } from "$/ui.ts";
 
 const routes = await navigateRoutes("./routes", "/");
 const strRep = JSON.stringify(routes, null, "\t");
 
+const endpoints = MakeEndpoints(routes);
+console.log(endpoints);
+
 Deno.writeTextFileSync(resolve(output, "./routes.json"), strRep);
+Deno.writeTextFileSync(
+  resolve(output, "./endpoints.ts"),
+  serializeEndpoints(endpoints)
+);
 
 import { serve } from "https://deno.land/std@0.126.0/http/server.ts";
 import { EndpointResponse } from "./impact.d.ts";

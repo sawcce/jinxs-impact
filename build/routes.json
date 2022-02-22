@@ -1,16 +1,21 @@
 {
 	"name": "/",
 	"path": "./routes",
-	"subroutes": {
-		"x": {
+	"subroutes": [
+		{
 			"name": "/x",
 			"path": "/home/alexis/Development/Frameworks/jinxs-impact/cli/routes/x",
-			"subroutes": {
-				"t": {
+			"subroutes": [
+				{
 					"name": "/x/t",
 					"path": "/home/alexis/Development/Frameworks/jinxs-impact/cli/routes/x/t.ts"
 				}
-			}
+			],
+			"isDir": true
 		}
+	],
+	"isDir": true,
+	"default": {
+		"path": "/home/alexis/Development/Frameworks/jinxs-impact/cli/routes/index.ts"
 	}
 }
