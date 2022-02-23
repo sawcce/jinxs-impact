@@ -12,6 +12,8 @@ export default async function Build(
   input: string,
   output: string
 ): Promise<[Route, Endpoint[]]> {
+  console.time('Build');
+
   const routes = await navigateRoutes(resolve(Deno.cwd(), input), '/');
   const strRep = JSON.stringify(routes, null, '\t');
 
@@ -24,5 +26,6 @@ export default async function Build(
     serializeEndpoints(endpoints)
   );
 
+  console.timeEnd('Build');
   return [routes, endpoints];
 }
