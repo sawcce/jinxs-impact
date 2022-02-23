@@ -165,7 +165,7 @@ const defaultError = (error: Error) => new Paragraph(`Error: ${error.message}`);
 
 const importMap: Record<string, string> = {};
 
-function safeGetSetImport(path: string, prefix: string = '__'): string {
+function safeGetSetImport(path: string, prefix = '__'): string {
   if (importMap[path] == null) {
     return `${prefix}${uniqueString(20)}`;
   }
