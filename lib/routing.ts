@@ -167,14 +167,22 @@ const importMap: Record<string, string> = {};
 
 export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
   let endpoints: Endpoint[] = [];
-  
+
   let computedLayouts = [...layouts];
   console.log(root);
 
+  /**
+   * If there is a layout on the root, and the path of the layout isn't null.
+   */
   if (root.layout != null && importMap[root.layout?.path] == null) {
     const layoutUUID = `__LAYOUT__${uniqueString(20)}`;
     importMap[root.layout.path] = layoutUUID;
-    computedLayouts.push(layoutUUID);
+
+    if (root.layout.type == 'nested') {
+      computedLayouts.push(layoutUUID);
+    } else {
+      computedLayouts = [layoutUUID];
+    }
   } else if (root.layout != null) {
     computedLayouts.push(root.layout.path);
   }
