@@ -167,12 +167,16 @@ const importMap: Record<string, string> = {};
 
 export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
   let endpoints: Endpoint[] = [];
+  
+  let computedLayouts = [...layouts];
   console.log(root);
 
   if (root.layout != null && importMap[root.layout?.path] == null) {
-    const layoutUUID = uniqueString(20);
+    const layoutUUID = `__LAYOUT__${uniqueString(20)}`;
     importMap[root.layout.path] = layoutUUID;
-    layouts.push(layoutUUID);
+    computedLayouts.push(layoutUUID);
+  } else if (root.layout != null) {
+    computedLayouts.push(root.layout.path);
   }
 
   /**
@@ -187,7 +191,7 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
         regex: regex,
         parameters: params,
         error: root.error?.default || defaultError,
-        layouts: layouts,
+        layouts: computedLayouts,
         literal: root.name
       }
     ];
@@ -200,13 +204,13 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
       regex: regex,
       parameters: params,
       error: root.error?.default || ((_: any) => ''),
-      layouts: layouts,
+      layouts: computedLayouts,
       literal: root.name
     });
   }
 
   for (const subRoute of root.subroutes || []) {
-    endpoints = [...endpoints, ...MakeEndpoints(subRoute, layouts)];
+    endpoints = [...endpoints, ...MakeEndpoints(subRoute, computedLayouts)];
   }
 
   return endpoints;
