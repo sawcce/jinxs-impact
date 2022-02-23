@@ -1,5 +1,4 @@
 import { parse, resolve } from '@/path.ts';
-import { uniqueString } from '@/unique-string.ts';
 
 import { Element, Paragraph } from '$/ui.ts';
 
@@ -166,11 +165,14 @@ function makePageRegex(name: string): [RegExp, string[]] {
 const defaultError = (error: Error) => new Paragraph(`Error: ${error.message}`);
 
 const importMap: Record<string, string> = {};
+let mapCount = 0;
 
 function safeGetSetImport(path: string, prefix = '__'): string {
   if (importMap[path] == null) {
-    const id = `${prefix}${uniqueString(20)}`;
+    const id = `${prefix}${mapCount}`;
     importMap[path] = id;
+
+    mapCount += 1;
     return id;
   }
   return importMap[path];
@@ -240,21 +242,26 @@ export function serializeEndpoints(endpoints: Endpoint[]): string {
   const routesList =
     '[\n' +
     endpoints
-      .map(
-        (endpoint) =>
-          ` { regex: ${endpoint.regex.toString()}, parameters: [${endpoint.parameters
-            .map((p) => `\"${p}\"`)
-            .join(', ')}], layouts: [ ${endpoint.layouts
-            .map((layout) => layout.toString())
-            .join(',')} ], error: ${endpoint.error}, literal: "${
-            endpoint.literal
-          }", }`
-      )
+      .map((endpoint) => {
+        let layoutString = '  ';
+        for (const layout of endpoint.layouts) {
+          layoutString += `${layout}.default(`;
+        }
+
+        layoutString += 'slot' + ')'.repeat(endpoint.layouts.length);
+        layoutString = layoutString.trim();
+
+        return ` { regex: ${endpoint.regex.toString()}, parameters: [${endpoint.parameters
+          .map((p) => `\"${p}\"`)
+          .join(', ')}], layout: (slot) => ${layoutString}, error: ${
+          endpoint.error
+        }, literal: "${endpoint.literal}", }`;
+      })
       .join(',\n') +
     '\n]';
 
   const imports = Object.entries(importMap)
-    .map(([key, value]) => `import ${value} from "${key}";`)
+    .map(([key, value]) => `import * as ${value} from "${key}";`)
     .join('\n');
 
   return `${imports}
