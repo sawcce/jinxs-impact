@@ -127,6 +127,8 @@ export type Endpoint = {
   literal: string;
   layouts: string[];
   error: Function;
+  get: Function;
+  post: Function;
 };
 
 /**
@@ -149,7 +151,7 @@ function makePageRegex(name: string): [RegExp, string[]] {
       );
 
       matchString += name.substring(i, i + position);
-      matchString += '\\[\\w+\\]';
+      matchString += '(\\[\\w+\\])';
 
       i += position + matches[0].length - 1;
     } else {
@@ -167,7 +169,9 @@ const importMap: Record<string, string> = {};
 
 function safeGetSetImport(path: string, prefix = '__'): string {
   if (importMap[path] == null) {
-    return `${prefix}${uniqueString(20)}`;
+    const id = `${prefix}${uniqueString(20)}`;
+    importMap[path] = id;
+    return id;
   }
   return importMap[path];
 }
@@ -199,6 +203,8 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
    */
   if (!root.isDir && root.subroutes == null) {
     const [regex, params] = makePageRegex(root.name);
+    const importId = safeGetSetImport(root.path, '__PAGE__');
+
     return [
       {
         regex: regex,
@@ -212,6 +218,7 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
 
   if (root.default != null) {
     const [regex, params] = makePageRegex(root.name);
+    const importId = safeGetSetImport(root.default.path, '__PAGE__');
 
     endpoints.push({
       regex: regex,
