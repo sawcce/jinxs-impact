@@ -1,5 +1,7 @@
-import { parse, resolve } from "@/path.ts";
-import { Element, Paragraph } from "$/ui.ts";
+import { parse, resolve } from '@/path.ts';
+import { uniqueString } from '@/unique-string.ts';
+
+import { Element, Paragraph } from '$/ui.ts';
 
 /**
  * Interface that maps a route Module
@@ -36,15 +38,14 @@ export interface Route {
   subroutes?: Route[];
   /**The layout file for that route's default and subroutes */
   layout?: {
-    type: "nested" | "override";
+    type: 'nested' | 'override';
   } & Module;
   /**The error file when the Route doesn't handle the error or is missing (404) */
   error?: Module;
   isDir?: boolean;
 }
 
-/**Dictionnary of Routes */
-export type Routes = Record<string, Route>;
+export type Routes = Route[];
 
 /**
  * Goes through all the files in a directory, recursively,
@@ -61,44 +62,46 @@ export async function navigateRoutes(
     name: pathName,
     path: basePath,
     subroutes: [],
-    isDir: pathName == "/",
+    isDir: pathName == '/'
   };
 
   for await (const { name, isFile, isSymlink } of Deno.readDir(basePath)) {
+    console.log(name);
     if (isFile) {
       const base:
-        | "index"
-        | "__layout"
-        | "__error"
-        | "__layout.override"
+        | 'index'
+        | '__layout'
+        | '__error'
+        | '__layout.override'
         | string = parse(name).name;
 
       const resolved = resolve(basePath, name);
 
       switch (base) {
-        case "index":
+        case 'index':
           route.default = {
             path: resolved,
-            ...(await import(resolved)),
+            ...(await import(resolved))
           };
           continue;
 
-        case "__layout.override":
-        case "__layout":
+        case '__layout.override':
+        case '__layout':
           route.layout = {
-            type: base == "__layout" ? "nested" : "override",
+            type: base == '__layout' ? 'nested' : 'override',
             path: resolved,
+            ...(await import(resolved))
           };
           continue;
 
-        case "__error":
+        case '__error':
           route.error = { path: resolved };
           continue;
       }
 
       route?.subroutes?.push({
         name: resolve(pathName, base),
-        path: resolve(basePath, name),
+        path: resolve(basePath, name)
       });
       continue;
     }
@@ -108,7 +111,7 @@ export async function navigateRoutes(
         resolve(basePath, name),
         resolve(pathName, name)
       )),
-      isDir: true,
+      isDir: true
     });
   }
 
@@ -120,69 +123,117 @@ export async function navigateRoutes(
  */
 export type Endpoint = {
   regex: RegExp;
-  layouts: Function[];
+  parameters: string[];
+  literal: string;
+  layouts: string[];
   error: Function;
 };
 
+/**
+ * Transforms a page name into a matchable regex with the named parameters.
+ * /[id] -> /* , ["id"]
+ */
+function makePageRegex(name: string): [RegExp, string[]] {
+  const length = name.length;
+  let matchString = '';
+  let params = [];
+
+  for (let i = 0; i < length; i++) {
+    const str = name.substring(i, name.length);
+    const matches = str.match(/\[\w+\]/);
+
+    if (matches != null && matches.index != null) {
+      const position = matches.index;
+      params.push(
+        name.substring(i + position + 1, i + position + matches[0].length - 1)
+      );
+
+      matchString += name.substring(i, i + position);
+      matchString += '\\[\\w+\\]';
+
+      i += position + matches[0].length - 1;
+    } else {
+      matchString += str;
+      break;
+    }
+  }
+
+  return [new RegExp(matchString), params];
+}
+
 const defaultError = (error: Error) => new Paragraph(`Error: ${error.message}`);
 
-export function MakeEndpoints(root: Route, layouts: Module[] = []): Endpoint[] {
+const importMap: Record<string, string> = {};
+
+export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
   let endpoints: Endpoint[] = [];
+  console.log(root);
 
-  console.log(root.default);
+  if (root.layout != null && importMap[root.layout?.path] == null) {
+    const layoutUUID = uniqueString(20);
+    importMap[root.layout.path] = layoutUUID;
+    layouts.push(layoutUUID);
+  }
 
+  /**
+   * If the route is not a directory (route that contains subroutes)
+   * we push it to the endpoints list.
+   * This condition basically checks if it's a single endpoint.
+   */
   if (!root.isDir && root.subroutes == null) {
+    const [regex, params] = makePageRegex(root.name);
     return [
       {
-        regex: new RegExp(root.name),
+        regex: regex,
+        parameters: params,
         error: root.error?.default || defaultError,
-        layouts: [],
-      },
+        layouts: layouts,
+        literal: root.name
+      }
     ];
   }
 
   if (root.default != null) {
-    const layout = root.layout?.default || ((slot: any) => slot);
+    const [regex, params] = makePageRegex(root.name);
+
     endpoints.push({
-      regex: new RegExp(root.name),
-      error: root.error?.default || ((_: any) => ""),
-      layouts: [layout],
+      regex: regex,
+      parameters: params,
+      error: root.error?.default || ((_: any) => ''),
+      layouts: layouts,
+      literal: root.name
     });
   }
 
   for (const subRoute of root.subroutes || []) {
-    endpoints = [...endpoints, ...MakeEndpoints(subRoute)];
+    endpoints = [...endpoints, ...MakeEndpoints(subRoute, layouts)];
   }
-
-  /*
-  if (root.subroutes != null) {
-    console.log(Object.values(root.subroutes));
-    let x: Endpoint[] = [];
-
-      console.log("Make :", value);
-      x.push({
-        regex: new RegExp(value.name),
-        layouts: [],
-        error: (e: any) => e,
-      });
-
-    endpoints = [...endpoints, ...x];
-  }*/
 
   return endpoints;
 }
 
 export function serializeEndpoints(endpoints: Endpoint[]): string {
-  return (
-    "[\n" +
+  const routesList =
+    '[\n' +
     endpoints
       .map(
         (endpoint) =>
-          ` { regex: ${endpoint.regex.toString()}, layouts: [ ${endpoint.layouts
+          ` { regex: ${endpoint.regex.toString()}, parameters: [${endpoint.parameters
+            .map((p) => `\"${p}\"`)
+            .join(', ')}], layouts: [ ${endpoint.layouts
             .map((layout) => layout.toString())
-            .join(",")} ], error: ${endpoint.error} }`
+            .join(',')} ], error: ${endpoint.error}, literal: "${
+            endpoint.literal
+          }", }`
       )
-      .join(",\n") +
-    "\n]"
-  );
+      .join(',\n') +
+    '\n]';
+
+  const imports = Object.entries(importMap)
+    .map(([key, value]) => `import ${value} from "${key}";`)
+    .join('\n');
+
+  return `${imports}
+
+export const routes = ${routesList};`;
 }
