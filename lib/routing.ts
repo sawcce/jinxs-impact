@@ -165,6 +165,13 @@ const defaultError = (error: Error) => new Paragraph(`Error: ${error.message}`);
 
 const importMap: Record<string, string> = {};
 
+function safeGetSetImport(path: string, prefix: string = '__'): string {
+  if (importMap[path] == null) {
+    return `${prefix}${uniqueString(20)}`;
+  }
+  return importMap[path];
+}
+
 export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
   let endpoints: Endpoint[] = [];
 
@@ -174,8 +181,8 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
   /**
    * If there is a layout on the root, and the path of the layout isn't null.
    */
-  if (root.layout != null && importMap[root.layout?.path] == null) {
-    const layoutUUID = `__LAYOUT__${uniqueString(20)}`;
+  if (root.layout != null) {
+    const layoutUUID = safeGetSetImport(root.layout.path, '__LAYOUT__');
     importMap[root.layout.path] = layoutUUID;
 
     if (root.layout.type == 'nested') {
@@ -183,8 +190,6 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
     } else {
       computedLayouts = [layoutUUID];
     }
-  } else if (root.layout != null) {
-    computedLayouts.push(root.layout.path);
   }
 
   /**
