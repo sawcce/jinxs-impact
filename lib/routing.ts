@@ -127,8 +127,8 @@ export type Endpoint = {
   literal: string;
   layouts: string[];
   error: Function;
-  get: Function;
-  post: Function;
+  get?: Function;
+  post?: Function;
 };
 
 /**
