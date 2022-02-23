@@ -1,4 +1,5 @@
 import { resolve } from '@/path.ts';
+import { clearScreen, colors, cursorTo } from '@/cliffy.ts';
 
 import {
   navigateRoutes,
@@ -12,13 +13,15 @@ export default async function Build(
   input: string,
   output: string
 ): Promise<[Route, Endpoint[]]> {
-  console.time('Build');
+  const start = Date.now();
+
+  console.log(clearScreen);
+  console.log(colors.blue('[TASK] Started build process'));
 
   const routes = await navigateRoutes(resolve(Deno.cwd(), input), '/');
   const strRep = JSON.stringify(routes, null, '\t');
 
-  const endpoints = MakeEndpoints(routes);
-  console.log(endpoints);
+  const endpoints = await MakeEndpoints(routes);
 
   Deno.writeTextFileSync(resolve(output, './routes.json'), strRep);
   Deno.writeTextFileSync(
@@ -26,6 +29,10 @@ export default async function Build(
     serializeEndpoints(endpoints)
   );
 
-  console.timeEnd('Build');
+  const duration = Date.now() - start;
+  console.log(
+    colors.green(`[SUCCESS] Build done.`),
+    colors.gray(`(Took ${duration}ms)`)
+  );
   return [routes, endpoints];
 }

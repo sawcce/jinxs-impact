@@ -1,5 +1,7 @@
 import { parse, resolve } from '@/path.ts';
+import { colors } from '@/cliffy.ts';
 
+import { METHOD, Methods } from '$/net.ts';
 import { Element, Paragraph } from '$/ui.ts';
 
 /**
@@ -65,7 +67,6 @@ export async function navigateRoutes(
   };
 
   for await (const { name, isFile, isSymlink } of Deno.readDir(basePath)) {
-    console.log(name);
     if (isFile) {
       const base:
         | 'index'
@@ -127,6 +128,8 @@ export type Endpoint = {
   layouts: string[];
   error: Function;
   module: string;
+  methods: Record<METHOD, boolean>;
+  hasDefaultExport: boolean;
 };
 
 /**
@@ -177,11 +180,44 @@ function safeGetSetImport(path: string, prefix = '__'): string {
   return importMap[path];
 }
 
-export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
+function getExportedMethods(
+  module: Record<string, Function>,
+  name: string
+): [Record<METHOD, boolean>, boolean] {
+  const methods: Record<string, boolean> = {};
+  let hasDefaultExport = false;
+
+  for (const name of Object.keys(module)) {
+    if (name == 'default') {
+      hasDefaultExport = true;
+      continue;
+    }
+    if (Methods.indexOf(name.toUpperCase()) != -1) {
+      methods[name.toUpperCase()] = true;
+    }
+  }
+
+  /**
+   * If the route doesn't export any visible method to the server
+   */
+  if (Object.values(methods).length == 0 && !hasDefaultExport) {
+    console.warn(
+      colors.brightYellow(
+        `[WARN] Expected at least one exported method for route "${name}"!`
+      )
+    );
+  }
+
+  return [methods, hasDefaultExport];
+}
+
+export async function MakeEndpoints(
+  root: Route,
+  layouts: string[] = []
+): Promise<Endpoint[]> {
   let endpoints: Endpoint[] = [];
 
   let computedLayouts = [...layouts];
-  console.log(root);
 
   /**
    * If there is a layout on the root, and the path of the layout isn't null.
@@ -205,6 +241,10 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
   if (!root.isDir && root.subroutes == null) {
     const [regex, params] = makePageRegex(root.name);
     const importId = safeGetSetImport(root.path, '__PAGE__');
+    const [methods, hasDefaultExport] = getExportedMethods(
+      await import(root.path),
+      root.name
+    );
 
     return [
       {
@@ -212,7 +252,10 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
         parameters: params,
         error: root.error?.default || defaultError,
         layouts: computedLayouts,
-        literal: root.name
+        literal: root.name,
+        module: importId,
+        methods,
+        hasDefaultExport
       }
     ];
   }
@@ -220,18 +263,28 @@ export function MakeEndpoints(root: Route, layouts: string[] = []): Endpoint[] {
   if (root.default != null) {
     const [regex, params] = makePageRegex(root.name);
     const importId = safeGetSetImport(root.default.path, '__PAGE__');
+    const [methods, hasDefaultExport] = getExportedMethods(
+      await import(root.default.path),
+      root.name
+    );
 
     endpoints.push({
       regex: regex,
       parameters: params,
       error: root.error?.default || ((_: any) => ''),
       layouts: computedLayouts,
-      literal: root.name
+      literal: root.name,
+      module: importId,
+      methods,
+      hasDefaultExport
     });
   }
 
   for (const subRoute of root.subroutes || []) {
-    endpoints = [...endpoints, ...MakeEndpoints(subRoute, computedLayouts)];
+    endpoints = [
+      ...endpoints,
+      ...(await MakeEndpoints(subRoute, computedLayouts))
+    ];
   }
 
   return endpoints;
@@ -250,9 +303,15 @@ export function serializeEndpoints(endpoints: Endpoint[]): string {
         layoutString += 'slot' + ')'.repeat(endpoint.layouts.length);
         layoutString = layoutString.trim();
 
-        return ` { regex: ${endpoint.regex.toString()}, parameters: [${endpoint.parameters
+        return ` { module: ${
+          endpoint.module
+        }, regex: ${endpoint.regex.toString()}, parameters: [${endpoint.parameters
           .map((p) => `\"${p}\"`)
-          .join(', ')}], layout: (slot) => ${layoutString}, error: ${
+          .join(', ')}], methods: ${JSON.stringify(
+          endpoint.methods
+        )}, hasDefault: ${
+          endpoint.hasDefaultExport
+        }, layout: (slot) => ${layoutString}, error: ${
           endpoint.error
         }, literal: "${endpoint.literal}", }`;
       })
