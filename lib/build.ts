@@ -20,7 +20,7 @@ export default async function Build(
 
   console.log('root :', resolve(Deno.cwd(), input));
 
-  const routes = await navigateRoutes(join(Deno.cwd(), input), '/');
+  const routes = await navigateRoutes(resolve(Deno.cwd(), input), '/');
   const strRep = JSON.stringify(routes, null, '\t');
 
   const endpoints = await MakeEndpoints(routes);
