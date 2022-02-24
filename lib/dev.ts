@@ -32,21 +32,25 @@ export async function Server(file: string) {
   const endpoints: any[] = module.routes;
 
   for (const endpoint of endpoints) {
+    if (endpoint.hasDefault && endpoint.methods['GET']) {
+      const handler = (params: any) =>
+        endpoint
+          .layout(endpoint.module.default(endpoint.module.get(params)))
+          .emit();
+
+      pushRoute('GET', endpoint.regex, handler, 'text/html');
+    } else if (endpoint.hasDefault) {
+      const handler = (params: any) => endpoint.module.default().emit();
+      pushRoute('GET', endpoint.regex, handler, 'text/html');
+    } else {
+      const handler = (params: any) => endpoint.module.get(params);
+      pushRoute('GET', endpoint.regex, handler, 'application/json');
+    }
+
     for (const method of Object.keys(endpoint.methods)) {
       const regex = endpoint.regex;
 
       if (method == 'GET') {
-        let handler = (params: any) => endpoint.module.get(params);
-
-        if (endpoint.hasDefault == true) {
-          handler = (params: any) =>
-            endpoint.layout(endpoint.module.default(params)).emit();
-
-          pushRoute(method, regex, handler, 'text/html');
-          continue;
-        }
-
-        pushRoute(method, regex, handler);
         continue;
       }
 
@@ -61,14 +65,20 @@ export async function Server(file: string) {
 
 const handler = (request: Request): Response => {
   for (const endpoint of Endpoints[request.method as METHOD]) {
-    const pathname = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const pathname = url.pathname;
     const match = pathname.match(endpoint[0]);
 
     if (match != null && match.length != 0) {
       const headers = new Headers();
       headers.set('Content-Type', endpoint[2]);
 
-      return new Response(endpoint[1](), { status: 200, headers });
+      const passedParams = {
+        headers: Object.fromEntries(request.headers.entries()),
+        url
+      };
+
+      return new Response(endpoint[1](passedParams), { status: 200, headers });
     }
   }
 
