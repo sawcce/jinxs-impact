@@ -18,6 +18,8 @@ export default async function Build(
   console.log(clearScreen);
   console.log(colors.blue('[TASK] Started build process'));
 
+  console.log('root :', join(Deno.cwd(), input));
+
   const routes = await navigateRoutes(join(Deno.cwd(), input), '/');
   const strRep = JSON.stringify(routes, null, '\t');
 
