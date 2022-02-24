@@ -49,7 +49,10 @@ Run this command with the deno cli installed:
 
 If you get an error stating that you already have an installation of the module, you can add the `-f` flag after `install` on the run command.
 
+which is equivalent to
+
+`deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
+
 ### Initialize a new project
 After installing the cli, simply run `impact init` to create a new project.
 
-deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts
