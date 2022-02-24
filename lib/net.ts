@@ -3,7 +3,6 @@ export type METHOD =
   | 'HEAD'
   | 'POST'
   | 'PUT'
-  | 'PUT'
   | 'DELETE'
   | 'CONNECT'
   | 'OPTIONS'
@@ -14,7 +13,6 @@ export const Methods = [
   'GET',
   'HEAD',
   'POST',
-  'PUT',
   'PUT',
   'DELETE',
   'CONNECT',

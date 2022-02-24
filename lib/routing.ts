@@ -134,7 +134,7 @@ export type Endpoint = {
  */
 function makePageRegex(name: string): [RegExp, string[]] {
   const length = name.length;
-  let matchString = '';
+  let matchString = '^';
   let params = [];
 
   for (let i = 0; i < length; i++) {
@@ -156,6 +156,8 @@ function makePageRegex(name: string): [RegExp, string[]] {
       break;
     }
   }
+
+  matchString += '$';
 
   return [new RegExp(matchString), params];
 }

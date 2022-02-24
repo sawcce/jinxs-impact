@@ -46,10 +46,9 @@ import {
 } from '$/routing.ts';
 import { Element, Paragraph } from '$/ui.ts';
 
-import { serve } from 'https://deno.land/std@0.126.0/http/server.ts';
-import { EndpointResponse } from './impact.d.ts';
-
 import Build from '$/build.ts';
+import { Server } from '$/dev.ts';
+
 import Init from '$/init.ts';
 
 switch (command) {
@@ -60,19 +59,10 @@ switch (command) {
   case 'init':
     await Init();
     break;
-}
 
-if (command == 'dev') {
-  const [routes, endpoints] = await Build(input, output);
-  const port = 8080;
-
-  const handler = (request: Request): Response => {
-    let body = 'Your user-agent is:\n\n';
-    body += request.headers.get('user-agent') || 'Unknown';
-
-    return new Response(body, { status: 200 });
-  };
-
-  console.log(`Dev JINXS app running at: http://localhost:8080/`);
-  await serve(handler, { port });
+  case 'dev': {
+    const [routes, endpoints] = await Build(input, output);
+    await Server(resolve(Deno.cwd(), output, 'endpoints.js'));
+    break;
+  }
 }
