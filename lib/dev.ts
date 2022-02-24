@@ -16,6 +16,7 @@ type FunctionByUrl = [
     /**Handler that requires two steps (only used when there's a get handler and then the ui handler chained) */
     | Function[]
   ),
+  string[],
   ContentType
 ];
 
@@ -35,9 +36,10 @@ function pushRoute(
   method: METHOD,
   regex: RegExp,
   handler: Function | Function[],
+  parameters: string[],
   type: ContentType = 'application/json'
 ) {
-  Endpoints[method].push([regex, handler, type]);
+  Endpoints[method].push([regex, handler, parameters, type]);
 }
 
 export async function Server(file: string) {
@@ -51,13 +53,31 @@ export async function Server(file: string) {
         (params: any) => endpoint.layout(endpoint.module.default(params)).emit()
       ];
 
-      pushRoute('GET', endpoint.regex, handler, 'text/html');
+      pushRoute(
+        'GET',
+        endpoint.regex,
+        handler,
+        endpoint.parameters,
+        'text/html'
+      );
     } else if (endpoint.hasDefault) {
       const handler = (params: any) => endpoint.module.default().emit();
-      pushRoute('GET', endpoint.regex, handler, 'text/html');
+      pushRoute(
+        'GET',
+        endpoint.regex,
+        handler,
+        endpoint.parameters,
+        'text/html'
+      );
     } else {
       const handler = (params: any) => endpoint.module.get(params);
-      pushRoute('GET', endpoint.regex, handler, 'application/json');
+      pushRoute(
+        'GET',
+        endpoint.regex,
+        handler,
+        endpoint.parameters,
+        'application/json'
+      );
     }
 
     for (const method of Object.keys(endpoint.methods)) {
@@ -67,8 +87,11 @@ export async function Server(file: string) {
         continue;
       }
 
-      pushRoute(method as METHOD, regex, (params: any) =>
-        endpoint.module[method.toLowerCase()](params)
+      pushRoute(
+        method as METHOD,
+        regex,
+        (params: any) => endpoint.module[method.toLowerCase()](params),
+        endpoint.parameters
       );
     }
   }
@@ -77,17 +100,25 @@ export async function Server(file: string) {
 }
 
 const handler = (request: Request): Response => {
+  console.log(Endpoints);
+
   for (const endpoint of Endpoints[request.method as METHOD]) {
     const url = new URL(request.url);
     const pathname = url.pathname;
-    const match = pathname.match(endpoint[0]);
+    const match = endpoint[0].exec(pathname);
 
-    if (match == null || match.length == 0) {
-      return new Response('404 not found', { status: 404 });
+    console.log(match, pathname, endpoint[0]);
+
+    if (match == null || match.length == 0) continue;
+
+    const routeParams: Record<string, string> = {};
+
+    for (let i = 0; i < endpoint[2].length; i++) {
+      routeParams[endpoint[2][i]] = match[i + 1];
     }
 
     const headers = new Headers();
-    headers.set('Content-Type', endpoint[2]);
+    headers.set('Content-Type', endpoint[3]);
 
     if (endpoint[1] instanceof Function) {
       return new Response(endpoint[1](), {
@@ -98,7 +129,8 @@ const handler = (request: Request): Response => {
 
     const passedParams = {
       headers: Object.fromEntries(request.headers.entries()),
-      url
+      url,
+      ...routeParams
     };
 
     const result = endpoint[1][0](passedParams);

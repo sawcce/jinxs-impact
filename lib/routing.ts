@@ -148,7 +148,7 @@ function makePageRegex(name: string): [RegExp, string[]] {
       );
 
       matchString += name.substring(i, i + position);
-      matchString += '(\\[\\w+\\])';
+      matchString += '(\\w+)';
 
       i += position + matches[0].length - 1;
     } else {
