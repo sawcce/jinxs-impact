@@ -238,7 +238,7 @@ export async function MakeEndpoints(
     const [regex, params] = makePageRegex(root.name);
     const importId = safeGetSetImport(root.path, '__PAGE__');
     const [methods, hasDefaultExport] = getExportedMethods(
-      await import(root.path),
+      await import('file://' + root.path),
       root.name
     );
 
@@ -260,7 +260,7 @@ export async function MakeEndpoints(
     const [regex, params] = makePageRegex(root.name);
     const importId = safeGetSetImport(root.default.path, '__PAGE__');
     const [methods, hasDefaultExport] = getExportedMethods(
-      await import(root.default.path),
+      await import('file://' + root.default.path),
       root.name
     );
 
