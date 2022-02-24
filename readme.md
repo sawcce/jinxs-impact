@@ -60,4 +60,4 @@ After installing the cli, simply run `impact init` to create a new project.
 
 ## Routes
 
-Impact uses a file-based router.
+Impact uses a file-based router similar to svelte and nextjs.
