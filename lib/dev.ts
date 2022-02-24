@@ -47,7 +47,12 @@ export async function Server(file: string) {
         }
 
         pushRoute(method, regex, handler);
+        continue;
       }
+
+      pushRoute(method as METHOD, regex, (params: any) =>
+        endpoint.module[method.toLowerCase()](params)
+      );
     }
   }
 
