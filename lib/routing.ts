@@ -81,8 +81,7 @@ export async function navigateRoutes(
       switch (base) {
         case 'index':
           route.default = {
-            path: resolved,
-            ...(await import(resolved))
+            path: resolved
           };
           continue;
 
