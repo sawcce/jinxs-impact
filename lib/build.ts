@@ -1,4 +1,4 @@
-import { resolve } from '@/path.ts';
+import { join, resolve } from '@/path.ts';
 import { clearScreen, colors, cursorTo } from '@/cliffy.ts';
 
 import {
@@ -18,7 +18,7 @@ export default async function Build(
   console.log(clearScreen);
   console.log(colors.blue('[TASK] Started build process'));
 
-  const routes = await navigateRoutes(resolve('/', Deno.cwd(), input), '/');
+  const routes = await navigateRoutes(join(Deno.cwd(), input), '/');
   const strRep = JSON.stringify(routes, null, '\t');
 
   const endpoints = await MakeEndpoints(routes);
