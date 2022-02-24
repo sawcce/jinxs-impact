@@ -1,4 +1,4 @@
-import { parse, resolve } from '@/path.ts';
+import { join, parse, resolve } from '@/path.ts';
 import { colors } from '@/cliffy.ts';
 
 import { METHOD, Methods } from '$/net.ts';
@@ -75,7 +75,7 @@ export async function navigateRoutes(
         | '__layout.override'
         | string = parse(name).name;
 
-      const resolved = resolve(basePath, name);
+      const resolved = join(basePath, name);
 
       switch (base) {
         case 'index':
