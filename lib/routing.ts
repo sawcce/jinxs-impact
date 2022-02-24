@@ -1,4 +1,4 @@
-import { join, parse, resolve } from '@/path.ts';
+import { join, parse } from '@/path.ts';
 import { colors } from '@/cliffy.ts';
 
 import { METHOD, Methods } from '$/net.ts';
@@ -89,8 +89,7 @@ export async function navigateRoutes(
         case '__layout':
           route.layout = {
             type: base == '__layout' ? 'nested' : 'override',
-            path: resolved,
-            ...(await import(resolved))
+            path: resolved
           };
           continue;
 
@@ -100,17 +99,14 @@ export async function navigateRoutes(
       }
 
       route?.subroutes?.push({
-        name: resolve(pathName, base),
-        path: resolve(basePath, name)
+        name: join(pathName, base),
+        path: join(basePath, name)
       });
       continue;
     }
 
     route?.subroutes?.push({
-      ...(await navigateRoutes(
-        resolve(basePath, name),
-        resolve(pathName, name)
-      )),
+      ...(await navigateRoutes(join(basePath, name), join(pathName, name))),
       isDir: true
     });
   }
