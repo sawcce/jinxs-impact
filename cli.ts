@@ -74,5 +74,5 @@ if (command == 'dev') {
   };
 
   console.log(`Dev JINXS app running at: http://localhost:8080/`);
-  //await serve(handler, { port });
+  await serve(handler, { port });
 }

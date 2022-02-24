@@ -267,7 +267,7 @@ export async function MakeEndpoints(
     endpoints.push({
       regex: regex,
       parameters: params,
-      error: root.error?.default || ((_: any) => ''),
+      error: (_: any) => '',
       layouts: computedLayouts,
       literal: root.name,
       module: importId,
