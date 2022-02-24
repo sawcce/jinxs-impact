@@ -45,10 +45,11 @@ and start contributing, before committing format your files with the prettier fo
 ## Install the cli
 
 Run this command with the deno cli installed:
-`deno --unstable install --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
+`deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=https://deno.land/x/impact@pre-alpha/import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
 
 If you get an error stating that you already have an installation of the module, you can add the `-f` flag after `install` on the run command.
 
 ### Initialize a new project
 After installing the cli, simply run `impact init` to create a new project.
 
+deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts

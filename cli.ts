@@ -67,34 +67,12 @@ if (command == 'dev') {
   const port = 8080;
 
   const handler = (request: Request): Response => {
-    let headers = Object.fromEntries(request.headers.entries());
-    let params = {
-      headers
-    };
+    let body = 'Your user-agent is:\n\n';
+    body += request.headers.get('user-agent') || 'Unknown';
 
-    console.log(request.method);
-
-    const res_headers = new Headers();
-    res_headers.set('Content-Type', 'text/html');
-
-    return new Response(
-      `
-<!DOCTYPE html>
-<html>
-    <head>
-      <title>Impact app</title>
-    </head>
-    <body>
-      <p>The dev server is currently being worked on!</p>
-    </body>
-</html>
-    `,
-      {
-        status: 200
-      }
-    );
+    return new Response(body, { status: 200 });
   };
 
   console.log(`Dev JINXS app running at: http://localhost:8080/`);
-  await serve(handler, { port });
+  //await serve(handler, { port });
 }
