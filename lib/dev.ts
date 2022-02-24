@@ -3,8 +3,21 @@ import { serve } from '@/http.ts';
 import { METHOD } from '$/net.ts';
 import { Endpoint } from '$/routing.ts';
 
+/**
+ * Default value for the content-type header.
+ * Used to identify if this is a raw request handler or if it is a ui(handler()) / ui() combination.
+ */
 type ContentType = 'text/html' | 'application/json';
-type FunctionByUrl = [RegExp, Function, ContentType];
+type FunctionByUrl = [
+  RegExp,
+  /**Single handler */
+  (
+    | Function
+    /**Handler that requires two steps (only used when there's a get handler and then the ui handler chained) */
+    | Function[]
+  ),
+  ContentType
+];
 
 const Endpoints: Record<METHOD, FunctionByUrl[]> = {
   GET: [],
@@ -21,7 +34,7 @@ const Endpoints: Record<METHOD, FunctionByUrl[]> = {
 function pushRoute(
   method: METHOD,
   regex: RegExp,
-  handler: Function,
+  handler: Function | Function[],
   type: ContentType = 'application/json'
 ) {
   Endpoints[method].push([regex, handler, type]);
@@ -33,10 +46,10 @@ export async function Server(file: string) {
 
   for (const endpoint of endpoints) {
     if (endpoint.hasDefault && endpoint.methods['GET']) {
-      const handler = (params: any) =>
-        endpoint
-          .layout(endpoint.module.default(endpoint.module.get(params)))
-          .emit();
+      const handler = [
+        (params: any) => endpoint.module.get(params),
+        (params: any) => endpoint.layout(endpoint.module.default(params)).emit()
+      ];
 
       pushRoute('GET', endpoint.regex, handler, 'text/html');
     } else if (endpoint.hasDefault) {
@@ -69,20 +82,39 @@ const handler = (request: Request): Response => {
     const pathname = url.pathname;
     const match = pathname.match(endpoint[0]);
 
-    if (match != null && match.length != 0) {
-      const headers = new Headers();
-      headers.set('Content-Type', endpoint[2]);
-
-      const passedParams = {
-        headers: Object.fromEntries(request.headers.entries()),
-        url
-      };
-
-      return new Response(endpoint[1](passedParams), { status: 200, headers });
+    if (match == null || match.length == 0) {
+      return new Response('404 not found', { status: 404 });
     }
+
+    const headers = new Headers();
+    headers.set('Content-Type', endpoint[2]);
+
+    if (endpoint[1] instanceof Function) {
+      return new Response(endpoint[1](), {
+        status: 200,
+        headers
+      });
+    }
+
+    const passedParams = {
+      headers: Object.fromEntries(request.headers.entries()),
+      url
+    };
+
+    const result = endpoint[1][0](passedParams);
+    const status = result.status || 200;
+
+    console.log(result.props);
+
+    for (const [name, value] of result.headers || []) {
+      headers.append(name, value);
+    }
+
+    return new Response(endpoint[1][1](result.props), {
+      status,
+      headers
+    });
   }
 
-  const body = '404 not found';
-
-  return new Response(body, { status: 404 });
+  return new Response('404 not found', { status: 404 });
 };
