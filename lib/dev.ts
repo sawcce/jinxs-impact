@@ -1,4 +1,5 @@
 import { serve } from '@/http.ts';
+import { colors } from '@/cliffy.ts';
 
 import { METHOD } from '$/net.ts';
 import { Endpoint } from '$/routing.ts';
@@ -99,15 +100,40 @@ export async function Server(file: string) {
   await serve(handler, { port: 8080 });
 }
 
-const handler = (request: Request): Response => {
-  console.log(Endpoints);
+const Encoder = new TextEncoder();
+
+function colorByCategory(category: string): any {
+  switch (category) {
+    case '1':
+      return colors.yellow;
+    case '2':
+      return colors.green;
+    case '3':
+      return colors.magenta;
+    case '4':
+      return colors.red;
+    case '5':
+      return colors.red;
+  }
+}
+
+function endRequest(status: Number) {
+  const firstDigit = status.toString()[0];
+  const color = colorByCategory(firstDigit);
+
+  Deno.stdout.writeSync(Encoder.encode(color(` ${status}\n`)));
+}
+
+const handler = async (request: Request): Promise<Response> => {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+
+  Deno.stdout.writeSync(
+    Encoder.encode(colors.gray(`[REQUEST] (${request.method}) - ${pathname}`))
+  );
 
   for (const endpoint of Endpoints[request.method as METHOD]) {
-    const url = new URL(request.url);
-    const pathname = url.pathname;
     const match = endpoint[0].exec(pathname);
-
-    console.log(match, pathname, endpoint[0]);
 
     if (match == null || match.length == 0) continue;
 
@@ -121,6 +147,7 @@ const handler = (request: Request): Response => {
     headers.set('Content-Type', endpoint[3]);
 
     if (endpoint[1] instanceof Function) {
+      endRequest(200);
       return new Response(endpoint[1](), {
         status: 200,
         headers
@@ -133,20 +160,20 @@ const handler = (request: Request): Response => {
       ...routeParams
     };
 
-    const result = endpoint[1][0](passedParams);
-    const status = result.status || 200;
+    const result = await endpoint[1][0](passedParams);
+    const status = result?.status || 200;
 
-    console.log(result.props);
-
-    for (const [name, value] of result.headers || []) {
+    for (const [name, value] of result?.headers || []) {
       headers.append(name, value);
     }
 
-    return new Response(endpoint[1][1](result.props), {
+    endRequest(status);
+    return new Response(endpoint[1][1](result?.props || {}), {
       status,
       headers
     });
   }
 
+  endRequest(404);
   return new Response('404 not found', { status: 404 });
 };
