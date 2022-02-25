@@ -45,14 +45,19 @@ and start contributing, before committing format your files with the prettier fo
 ## Install the cli
 
 Run this command with the deno cli installed:
-`deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=https://raw.githubusercontent.com/sawcce/jinxs-impact/master/import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
+`deno --unstable install --allow-read --allow-env --allow-write --allow-net --import-map=https://raw.githubusercontent.com/sawcce/jinxs-impact/master/import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
 
 If you get an error stating that you already have an installation of the module, you can add the `-f` flag after `install` on the run command.
 
 which is equivalent to
 
-`deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
+`deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=https://raw.githubusercontent.com/sawcce/jinxs-impact/master/import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts`
+
+You might also want to add the `-r` flag if the updates aren't being downloaded.
 
 ### Initialize a new project
 After installing the cli, simply run `impact init` to create a new project.
 
+## Routes
+
+Impact uses a file-based router similar to svelte and nextjs.

@@ -76,7 +76,6 @@ export async function navigateRoutes(
         | string = parse(name).name;
 
       const resolved = join(basePath, name);
-      console.log('resolved :', resolved);
 
       switch (base) {
         case 'index':
@@ -134,7 +133,7 @@ export type Endpoint = {
  */
 function makePageRegex(name: string): [RegExp, string[]] {
   const length = name.length;
-  let matchString = '';
+  let matchString = '^';
   let params = [];
 
   for (let i = 0; i < length; i++) {
@@ -148,7 +147,7 @@ function makePageRegex(name: string): [RegExp, string[]] {
       );
 
       matchString += name.substring(i, i + position);
-      matchString += '(\\[\\w+\\])';
+      matchString += '(\\w+)';
 
       i += position + matches[0].length - 1;
     } else {
@@ -156,6 +155,8 @@ function makePageRegex(name: string): [RegExp, string[]] {
       break;
     }
   }
+
+  matchString += '$';
 
   return [new RegExp(matchString), params];
 }
