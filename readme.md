@@ -6,13 +6,11 @@ A new way to write server side apps in deno.
 #### Linux/MacOS/BSD
 ```bash
 curl -fsSL https://deno.land/x/install/install.sh | sh
-deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts
 ```
 
 #### Windows
 ```ps
 iwr https://deno.land/x/install/install.ps1 -useb | iex
-deno --unstable install -f --allow-read --allow-env --allow-write --allow-net --import-map=import_map.json --name impact https://raw.githubusercontent.com/sawcce/jinxs-impact/master/cli.ts
 ```
 
 #### Other

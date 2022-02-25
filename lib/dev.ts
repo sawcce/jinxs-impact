@@ -45,7 +45,7 @@ function pushRoute(
 }
 
 export async function Server(file: string) {
-  const module = await import(file);
+  const module = await import('file://' + file);
   const endpoints: any[] = module.routes;
 
   for (const endpoint of endpoints) {
