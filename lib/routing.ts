@@ -76,7 +76,6 @@ export async function navigateRoutes(
         | string = parse(name).name;
 
       const resolved = join(basePath, name);
-      console.log('resolved :', resolved);
 
       switch (base) {
         case 'index':

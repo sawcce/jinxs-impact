@@ -3,6 +3,7 @@ import { colors } from '@/cliffy.ts';
 
 import { METHOD } from '$/net.ts';
 import { Endpoint } from '$/routing.ts';
+import { Context } from '$/ui.ts';
 
 /**
  * Default value for the content-type header.
@@ -51,7 +52,11 @@ export async function Server(file: string) {
     if (endpoint.hasDefault && endpoint.methods['GET']) {
       const handler = [
         (params: any) => endpoint.module.get(params),
-        (params: any) => endpoint.layout(endpoint.module.default(params)).emit()
+        (params: any) => {
+          const exec = endpoint.layout(endpoint.module.default(params));
+          let context = new Context();
+          return context.emit(exec);
+        }
       ];
 
       pushRoute(
@@ -143,6 +148,7 @@ const handler = async (request: Request): Promise<Response> => {
       routeParams[endpoint[2][i]] = match[i + 1];
     }
 
+    const context = new Context();
     const headers = new Headers();
     headers.set('Content-Type', endpoint[3]);
 
